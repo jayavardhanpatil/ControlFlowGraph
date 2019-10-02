@@ -5,13 +5,14 @@ import sun.awt.image.ImageWatched;
 import java.io.*;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedList;
 
 public class Application {
 
     private static LinkedList<Node> nodes = new LinkedList<Node>();
     private static int nodeNumbers = 0;
-    private static int lineNo = 0;
+    private static int lineNo = -1;
 
     public static void main(String[] args) throws IOException {
 
@@ -24,20 +25,38 @@ public class Application {
         File file = new File("program.txt");
         BufferedReader reader = new BufferedReader(new FileReader(file));
         StringBuilder builder = new StringBuilder();
-        parseProgram(reader, nodes, builder);
+        readCode(reader);
+        parseProgram();
 
         reader.close();
         return builder;
     }
 
-    private LinkedList<Node> parseProgram(BufferedReader reader, LinkedList<Node> linkedList, StringBuilder builder) throws IOException {
+    private static HashMap<Integer, String> codeLineMap = new HashMap<>();
+
+
+    private void readCode(BufferedReader reader) throws IOException {
         String line = "";
+        int lineCount = 0;
+        while ((line = reader.readLine()) != null){
+            if(line.isEmpty()){
+                continue;
+            }
+            codeLineMap.put(lineCount, line.trim());
+            lineCount++;
+        }
+    }
+
+
+
+    private LinkedList<Node> parseProgram() throws IOException {
 
         Node root = new Node(nodeNumbers, 0);
         nodeNumbers++;
-        createChildNode(reader, root);
+        createChildNode(root);
         print_nodes(root);
 
+        System.out.println(codeLineMap);
 
         /*while ((line = reader.readLine()) !=null){
             if(line.isEmpty()){
@@ -92,30 +111,32 @@ public class Application {
         return null;
     }
 
-
-    private Node createChildNode(BufferedReader reader, Node parent) throws IOException {
+    private Node createChildNode(Node parent) throws IOException {
 
         Node statement_node = null ;
         ArrayList<Node> lastNodesInBranch = new ArrayList<>();
         lineNo++;
 
-        String line = "";
-        while ((line = reader.readLine().trim())!=null){
-            if(lineNo == 1){
-                if(line.startsWith("{")){
-                    lineNo++;
-                    continue;
-                }
-            }
+        for(;lineNo<codeLineMap.size();){
+            String line = codeLineMap.get(lineNo).trim();
             //Create new Node when we find "{" in the code
+            //Make sure the each curly brace ends in new line.
+            if(line.startsWith("//")){
+                lineNo++;
+                continue;
+            }
+
             if(line.endsWith("{")) {
+
                 if(line.contains("else") && !line.contains("else if")){
-                    Node newNode = createChildNode(reader, parent);
+                    Node newNode = createChildNode(parent);
                     if(newNode == null) return null;
                     lastNodesInBranch.add(newNode);
-                }else {
+                } else {
+
                     Node newNode = new Node(nodeNumbers, lineNo);
                     nodeNumbers += 1;
+
                     if (!lastNodesInBranch.isEmpty()) {
                         connectParents(newNode, lastNodesInBranch);
                         lastNodesInBranch.clear();
@@ -124,13 +145,32 @@ public class Application {
                     }
 
                     parent = newNode;
-                    newNode = createChildNode(reader, newNode);
+
+                    if(line.contains("for") || (line.contains("while") && !line.contains("}while"))){
+                        lastNodesInBranch.add(parent);
+                    }
+
+                    newNode = createChildNode(newNode);
 
                     if (newNode == null) {
                         return null;
                     }
 
-                    lastNodesInBranch.add(newNode);
+                    if(line.contains("for") || (line.contains("while") && !line.contains("}while")) || line.contains("do")){
+                        newNode.childNodes.add(parent);
+                        parent = newNode;
+                    }
+
+                    if(line.contains("if")){
+                        //Check if block is ending without else
+                        //Check for the statement
+                        //Change the below condition to check if it contains else and test
+                        //if(codeLineMap.get(lineNo+1).endsWith(";") || codeLineMap.get(lineNo+1).endsWith("}")){
+                        if(!codeLineMap.get(lineNo+1).contains("else")){
+                            lastNodesInBranch.add(parent);
+                        }
+                        lastNodesInBranch.add(newNode);
+                    }
                     statement_node = null;
                 }
             } else{
@@ -183,13 +223,19 @@ public class Application {
         return nodes;
     }
 
+
+    private static HashSet<String> visitedEdges = new HashSet<>();
     private void print_nodes(Node root){
         if(root.childNodes == null || root.childNodes.size() == 0){
             return;
         }else{
             for(Node node: root.childNodes){
-                System.out.println("Node From : "+root.nodeNumber + "-->" + node.nodeNumber + " Code Lines "+ node.codeLines);
-                print_nodes(node);
+                    if(visitedEdges.contains(root.nodeNumber+"->"+node.nodeNumber)){
+                        continue;
+                    }
+                    visitedEdges.add(root.nodeNumber+"->"+node.nodeNumber);
+                    System.out.println("Node From : " + root.nodeNumber + "-->" + node.nodeNumber + " Code Lines " + node.codeLines);
+                    print_nodes(node);
             }
         }
     }

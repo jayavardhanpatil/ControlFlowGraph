@@ -1,17 +1,7 @@
-{
      int a=5;
-     if(a==5){
-         sout("Five");
-         sout("six");
-         if(a=7){
-            sout("hello");
-         }
-         else{
-            sout("Hi");
-         }
-     }
-     else{
-         sout("Not Five");
+     if(){
+        //This is commented line
+
+        sout("Hi");
      }
      sout("Done");
- }
