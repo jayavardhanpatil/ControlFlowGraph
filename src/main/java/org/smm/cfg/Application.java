@@ -1,7 +1,5 @@
 package org.smm.cfg;
 
-import sun.awt.image.ImageWatched;
-
 import java.io.*;
 import java.util.*;
 
@@ -41,7 +39,7 @@ public class Application {
         }
     }
 
-    private static ArrayList<Node> switchCaseNodes = new ArrayList<>();
+    private static ArrayList<Node> elseIfLadderNodes = new ArrayList<>();
 
     private LinkedList<Node> parseProgram() throws IOException {
 
@@ -105,13 +103,14 @@ public class Application {
         return null;
     }
 
+
+    private static boolean isElseIfladder = false;
     private Node createChildNode(Node parent) throws IOException {
 
         Node statement_node = null ;
         ArrayList<Node> lastNodesInBranch = new ArrayList<>();
         lineNo++;
 
-        boolean isFirstCase = true;
         for(;lineNo<codeLineMap.size();){
             String line = codeLineMap.get(lineNo).trim();
             //Create new Node when we find "{" in the code
@@ -123,28 +122,27 @@ public class Application {
 
             if(line.endsWith("{") || line.contains("case") || line.contains("default")) {
 
-                /*if(line.contains("switch")){
-                    while (true){
 
+                if (line.contains("else") && !line.contains("else if") && !isElseIfladder) {
 
-                    }
-                }*/
-
-
-                if(line.contains("else if")) {
-
-                    Node newNode = new Node(nodeNumbers,lineNo);
-                    nodeNumbers+=1;
-                    parent.childNodes.add(newNode);
-                    newNode = createChildNode(newNode);
-                    if(newNode == null) return null;
-                    lastNodesInBranch.add(newNode);
-
-                }else if (line.contains("else")) {
                     Node newNode = createChildNode(parent);
                     if (newNode == null) return null;
                     lastNodesInBranch.add(newNode);
-                } else {
+                }
+                else if(line.contains("else") && isElseIfladder && !line.contains("else if")){
+                    Node newNode = createChildNode(parent);
+                    isElseIfladder = false;
+                    //Create New Node as end of the switch statement
+                    Node endOfSwitchStatement = new Node(nodeNumbers, lineNo);
+                    nodeNumbers++;
+                    elseIfLadderNodes.add(newNode);
+                    connectParents(endOfSwitchStatement, elseIfLadderNodes);
+                    elseIfLadderNodes.clear();
+                    lastNodesInBranch.clear();
+                    parent = endOfSwitchStatement;
+                    //lastNodesInBranch.add(parent);
+                    lastNodesInBranch.add(parent);
+                }else{
                     Node newNode = new Node(nodeNumbers, lineNo);
                     nodeNumbers += 1;
 
@@ -157,30 +155,20 @@ public class Application {
 
                     parent = newNode;
 
-                    if(line.contains("for") || (line.contains("while") && !line.contains("}while")) || line.contains("case")){
+                    if(line.contains("for") || (line.contains("while") && !line.contains("}while"))){
                         lastNodesInBranch.add(parent);
                     }
 
-                    newNode = createChildNode(newNode);
 
-                    if(line.contains("case")){
-                        switchCaseNodes.add(newNode);
-                    }
+                    newNode = createChildNode(newNode);
 
                     if (newNode == null) {
                         return null;
                     }
 
-                    if(line.contains("default")){
-
-                        //Create New Node as end of the switch statement
-                        switchCaseNodes.add(newNode);
-                        newNode.codeLines.remove(lineNo);
-                        Node endOfSwitchStatement = new Node(nodeNumbers, lineNo);
-                        nodeNumbers++;
-                        connectParents(endOfSwitchStatement, switchCaseNodes);
-                        switchCaseNodes.clear();
-                        parent = endOfSwitchStatement;
+                    if(line.contains("else if")){
+                        isElseIfladder = true;
+                        elseIfLadderNodes.add(newNode);
                     }
 
                     if(line.contains("for") || (line.contains("while") && !line.contains("}while")) || line.contains("do")){
@@ -188,7 +176,10 @@ public class Application {
                         parent = newNode;
                     }
 
-                    if(line.contains("if")){
+                    if(line.contains("else if")){
+                        lastNodesInBranch.add(parent);
+                    }
+                    else if(line.contains("if")){
                         //Check if block is ending without else
                         //Check for the statement
                         //Change the below condition to check if it contains else and test
@@ -196,7 +187,12 @@ public class Application {
                         if(!codeLineMap.get(lineNo+1).contains("else")){
                             lastNodesInBranch.add(parent);
                         }
-                        lastNodesInBranch.add(newNode);
+                        if(codeLineMap.get(lineNo+1).contains("else if")){
+                            lastNodesInBranch.add(parent);
+                            elseIfLadderNodes.add(newNode);
+                        }else {
+                            lastNodesInBranch.add(newNode);
+                        }
                     }
                     statement_node = null;
                 }
@@ -273,7 +269,7 @@ public class Application {
                     /*System.out.print(root.nodeNumber+" -> ");
                     for(Node codeline : node.childNodes)
                         System.out.print(codeLineMap.get(codeline.nodeNumber));*/
-                       System.out.println("Node From : " + root.nodeNumber + " -> " + node.nodeNumber + " Code Lines " + node.codeLines);
+                       System.out.println(/*"Node From : " + */root.nodeNumber + " -> " + node.nodeNumber + " Code Lines " + node.codeLines);
                       // System.out.println(codeLineMap.get(root.nodeNumber) + " -> " + codeLineMap.get(node.nodeNumber));
                 print_nodes(node);
         }

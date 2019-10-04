@@ -2,13 +2,10 @@
     if(){
         hello;
     }
-    else if{
+    else if(){
         hi;
     }
-    else if(){
-        jay;
-    }
-    else{
-        nothing;
+    else {
+        man;
     }
     sout("Done");
