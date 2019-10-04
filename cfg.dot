@@ -1,0 +1,90 @@
+digraph G {
+label = "Control Flow Graph";
+[start] -> [int a=5;]
+digraph G {
+label = "Control Flow Graph";
+[int a=5;] -> [switch(){]
+digraph G {
+label = "Control Flow Graph";
+[switch(){] -> [case 1:]
+digraph G {
+label = "Control Flow Graph";
+[case 1:] -> [hello 1;, break;]
+digraph G {
+label = "Control Flow Graph";
+[hello 1;, break;] -> [lase;, }]
+digraph G {
+label = "Control Flow Graph";
+[lase;, }] -> [if(a){]
+digraph G {
+label = "Control Flow Graph";
+[if(a){] -> [}, hi;]
+digraph G {
+label = "Control Flow Graph";
+[}, hi;] -> [if(hello){]
+digraph G {
+label = "Control Flow Graph";
+[if(hello){] -> [hi;, }]
+digraph G {
+label = "Control Flow Graph";
+[hi;, }] -> [}]
+digraph G {
+label = "Control Flow Graph";
+[}] -> [sout("Done");]
+digraph G {
+label = "Control Flow Graph";
+}}}[if(hello){] -> [else if(1){]
+digraph G {
+label = "Control Flow Graph";
+[else if(1){] -> [amn;, }]
+digraph G {
+label = "Control Flow Graph";
+[amn;, }] -> [}]
+digraph G {
+label = "Control Flow Graph";
+}}[else if(1){] -> [else if(2){]
+digraph G {
+label = "Control Flow Graph";
+[else if(2){] -> [HRU;, }]
+digraph G {
+label = "Control Flow Graph";
+[HRU;, }] -> [}]
+digraph G {
+label = "Control Flow Graph";
+}}[else if(2){] -> [nothing;, }]
+digraph G {
+label = "Control Flow Graph";
+[nothing;, }] -> [}]
+digraph G {
+label = "Control Flow Graph";
+}}}}}}[if(a){] -> [hello;, }]
+digraph G {
+label = "Control Flow Graph";
+[hello;, }] -> [if(hello){]
+digraph G {
+label = "Control Flow Graph";
+}}}}}}[switch(){] -> [case 3:]
+digraph G {
+label = "Control Flow Graph";
+[case 3:] -> [hello 3;, break;]
+digraph G {
+label = "Control Flow Graph";
+[hello 3;, break;] -> [lase;, }]
+digraph G {
+label = "Control Flow Graph";
+}}}[switch(){] -> [case 2:]
+digraph G {
+label = "Control Flow Graph";
+[case 2:] -> [hello 2;, break;]
+digraph G {
+label = "Control Flow Graph";
+[hello 2;, break;] -> [lase;, }]
+digraph G {
+label = "Control Flow Graph";
+}}}[switch(){] -> [default :]
+digraph G {
+label = "Control Flow Graph";
+[default :] -> [lase;, }]
+digraph G {
+label = "Control Flow Graph";
+}}}}}

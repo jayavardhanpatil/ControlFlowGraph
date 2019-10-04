@@ -1,11 +1,33 @@
     int a=5;
-    if(){
-        hello;
+    switch(){
+        case 1:
+            hello 1;
+            break;
+        case 3:
+            hello 3;
+            break;
+        case 2:
+            hello 2;
+            break;
+        default :
+            lase;
     }
-    else if(){
+    if(a){
         hi;
     }
+    else(){
+        hello;
+    }
+    if(hello){
+        hi;
+    }
+    else if(1){
+        amn;
+    }
+    else if(2){
+        HRU;
+    }
     else {
-        man;
+        nothing;
     }
     sout("Done");

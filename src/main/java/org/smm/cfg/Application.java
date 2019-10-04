@@ -8,6 +8,10 @@ public class Application {
     private static int nodeNumbers = 0;
     private static int lineNo = -1;
     private static TreeMap<Integer, String> codeLineMap = new TreeMap<>();
+    private static HashMap<Integer, ArrayList<String>> nodeStatementMap = new HashMap<>();
+
+    public Application() throws IOException {
+    }
 
     public static void main(String[] args) throws IOException {
         Application app = new Application();
@@ -40,72 +44,32 @@ public class Application {
     }
 
     private static ArrayList<Node> elseIfLadderNodes = new ArrayList<>();
+    private static ArrayList<Node> switchCaseNodes = new ArrayList<>();
 
-    private LinkedList<Node> parseProgram() throws IOException {
+    private void parseProgram() throws IOException {
 
         Node root = new Node(nodeNumbers, 0);
+        ArrayList<String> statement = new ArrayList<>();
+        statement.add("start");
+        nodeStatementMap.put(0, statement);
         nodeNumbers++;
         createChildNode(root);
         print_nodes(root);
+
+        LinkedList<String> commands = new LinkedList<>();
+
+        ProcessBuilder processBuilder = new ProcessBuilder();
+        processBuilder.command("bash", "-c", "dot -Tpng cfg.dot -o cfg.png").start();
+
+
         //System.out.println(builder.toString());
         System.out.println(codeLineMap);
-
-        /*while ((line = reader.readLine()) !=null){
-            if(line.isEmpty()){
-                continue;
-            }
-
-            if(line.contains("{")){ //startNode
-                // If it is statement of nodes then create one block of nodes
-                Node newNode = new Node(nodeNumbers,lineNo);
-                nodeNumbers+=1;
-
-
-                if(builder.length() != 0){
-                    node = new Node(linkedList.size(), builder.toString());
-                    node.setPrevious(linkedList.getLast());
-                    linkedList.add(node);
-                    builder = new StringBuilder();
-                }
-
-                if (linkedList.size() == 0){
-                    builder.append("start Node").append("\n");
-                    linkedList.add(node);
-                    node.setPrevious(null);
-                }
-
-                builder.append(line.trim());
-                node = new Node(linkedList.size(), builder.toString());
-                node.setPrevious(linkedList.getLast());
-                linkedList.add(node);
-                return parseProgram(reader, linkedList, new StringBuilder());
-            }
-
-            if(line.contains("}")){
-                if(builder.length() != 0){
-                    Node node = new Node(linkedList.size(), builder.toString());
-                    linkedList.add(node);
-                    node.setPrevious(linkedList.getLast());
-                }
-
-                return parseProgram(reader, linkedList, new StringBuilder());
-                //Do something if it reaches the end of the block
-            }
-
-            if(line.charAt(line.length()-1) == ';'){
-                builder.append(line.trim()).append("\n");
-                return parseProgram(reader, linkedList, builder);
-            }
-        }
-
-        return linkedList;
-    }*/
-        return null;
     }
 
 
     private static boolean isElseIfladder = false;
-    private Node createChildNode(Node parent) throws IOException {
+    private static LinkedList<Node> switchNode = new LinkedList<>();
+    private Node createChildNode(Node parent) {
 
         Node statement_node = null ;
         ArrayList<Node> lastNodesInBranch = new ArrayList<>();
@@ -122,8 +86,25 @@ public class Application {
 
             if(line.endsWith("{") || line.contains("case") || line.contains("default")) {
 
+                if(line.contains("switch")){
+                    Node newNode = new Node(nodeNumbers, lineNo);
+                    nodeNumbers += 1;
+                    switchNode.add(newNode);
+                    if (!lastNodesInBranch.isEmpty()) {
+                        connectParents(newNode, lastNodesInBranch);
+                        lastNodesInBranch.clear();
+                    } else {
+                        parent.childNodes.add(newNode);
+                    }
+                    parent = newNode;
+                    newNode = createChildNode(parent);
+                    if (newNode == null) return null;
+                    connectParents(newNode, switchCaseNodes);
+                    switchNode.removeLast();
+                    lastNodesInBranch.add(newNode);
+                }
 
-                if (line.contains("else") && !line.contains("else if") && !isElseIfladder) {
+                else if (line.contains("else") && !line.contains("else if") && !isElseIfladder) {
 
                     Node newNode = createChildNode(parent);
                     if (newNode == null) return null;
@@ -146,6 +127,7 @@ public class Application {
                     Node newNode = new Node(nodeNumbers, lineNo);
                     nodeNumbers += 1;
 
+
                     if (!lastNodesInBranch.isEmpty()) {
                         connectParents(newNode, lastNodesInBranch);
                         lastNodesInBranch.clear();
@@ -158,7 +140,6 @@ public class Application {
                     if(line.contains("for") || (line.contains("while") && !line.contains("}while"))){
                         lastNodesInBranch.add(parent);
                     }
-
 
                     newNode = createChildNode(newNode);
 
@@ -180,10 +161,6 @@ public class Application {
                         lastNodesInBranch.add(parent);
                     }
                     else if(line.contains("if")){
-                        //Check if block is ending without else
-                        //Check for the statement
-                        //Change the below condition to check if it contains else and test
-                        //if(codeLineMap.get(lineNo+1).endsWith(";") || codeLineMap.get(lineNo+1).endsWith("}")){
                         if(!codeLineMap.get(lineNo+1).contains("else")){
                             lastNodesInBranch.add(parent);
                         }
@@ -193,6 +170,13 @@ public class Application {
                         }else {
                             lastNodesInBranch.add(newNode);
                         }
+                    }
+
+                    if(line.contains("case")){
+                        switchCaseNodes.add(newNode);
+                        lastNodesInBranch.add(switchNode.getLast());
+                    }else if(line.contains("default")){
+                        return newNode;
                     }
                     statement_node = null;
                 }
@@ -257,21 +241,34 @@ public class Application {
 
 
     private static HashSet<String> visitedEdges = new HashSet<>();
-    private void print_nodes(Node root){
+    File file = new File("cfg.dot");
+    FileWriter writer = new FileWriter(file);
+    private void print_nodes(Node root) throws IOException {
 
+            writer.append("digraph G {").append("\n").append("label = \"Control Flow Graph\";\n");
             for(Node node: root.childNodes){
-
                 if (visitedEdges.contains(root.nodeNumber + "->" + node.nodeNumber)) {
                     continue;
                 }
-
                     visitedEdges.add(root.nodeNumber + "->" + node.nodeNumber);
                     /*System.out.print(root.nodeNumber+" -> ");
                     for(Node codeline : node.childNodes)
                         System.out.print(codeLineMap.get(codeline.nodeNumber));*/
-                       System.out.println(/*"Node From : " + */root.nodeNumber + " -> " + node.nodeNumber + " Code Lines " + node.codeLines);
+                        ArrayList<String> statements = new ArrayList<>();
+                        for(Integer codeLine : node.codeLines){
+                            statements.add(codeLineMap.get(codeLine));
+                        }
+
+                            nodeStatementMap.put(node.nodeNumber, statements);
+
+                        System.out.println(nodeStatementMap.get(root.nodeNumber) + "->" + nodeStatementMap.get(node.nodeNumber));
+                        writer.append(nodeStatementMap.get(root.nodeNumber)+ " -> "+nodeStatementMap.get(node.nodeNumber) );
+                        writer.append("\n");
+                        //System.out.println(/*"Node From : " + */root.nodeNumber + " -> " + node.nodeNumber + " Code Lines " + node.codeLines);
                       // System.out.println(codeLineMap.get(root.nodeNumber) + " -> " + codeLineMap.get(node.nodeNumber));
                 print_nodes(node);
         }
+            writer.append("}");
+            writer.flush();
     }
 }
