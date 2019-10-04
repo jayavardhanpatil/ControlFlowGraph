@@ -1,7 +1,14 @@
-     int a=5;
-     if(){
-        //This is commented line
-
-        sout("Hi");
-     }
-     sout("Done");
+    int a=5;
+    if(){
+        hello;
+    }
+    else if{
+        hi;
+    }
+    else if(){
+        jay;
+    }
+    else{
+        nothing;
+    }
+    sout("Done");

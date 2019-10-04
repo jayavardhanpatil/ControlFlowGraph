@@ -3,19 +3,15 @@ package org.smm.cfg;
 import sun.awt.image.ImageWatched;
 
 import java.io.*;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.LinkedList;
+import java.util.*;
 
 public class Application {
 
-    private static LinkedList<Node> nodes = new LinkedList<Node>();
     private static int nodeNumbers = 0;
     private static int lineNo = -1;
+    private static TreeMap<Integer, String> codeLineMap = new TreeMap<>();
 
     public static void main(String[] args) throws IOException {
-
         Application app = new Application();
         app.readProgram();
 
@@ -32,8 +28,6 @@ public class Application {
         return builder;
     }
 
-    private static HashMap<Integer, String> codeLineMap = new HashMap<>();
-
 
     private void readCode(BufferedReader reader) throws IOException {
         String line = "";
@@ -47,7 +41,7 @@ public class Application {
         }
     }
 
-
+    private static ArrayList<Node> switchCaseNodes = new ArrayList<>();
 
     private LinkedList<Node> parseProgram() throws IOException {
 
@@ -55,7 +49,7 @@ public class Application {
         nodeNumbers++;
         createChildNode(root);
         print_nodes(root);
-
+        //System.out.println(builder.toString());
         System.out.println(codeLineMap);
 
         /*while ((line = reader.readLine()) !=null){
@@ -117,6 +111,7 @@ public class Application {
         ArrayList<Node> lastNodesInBranch = new ArrayList<>();
         lineNo++;
 
+        boolean isFirstCase = true;
         for(;lineNo<codeLineMap.size();){
             String line = codeLineMap.get(lineNo).trim();
             //Create new Node when we find "{" in the code
@@ -126,14 +121,30 @@ public class Application {
                 continue;
             }
 
-            if(line.endsWith("{")) {
+            if(line.endsWith("{") || line.contains("case") || line.contains("default")) {
 
-                if(line.contains("else") && !line.contains("else if")){
-                    Node newNode = createChildNode(parent);
+                /*if(line.contains("switch")){
+                    while (true){
+
+
+                    }
+                }*/
+
+
+                if(line.contains("else if")) {
+
+                    Node newNode = new Node(nodeNumbers,lineNo);
+                    nodeNumbers+=1;
+                    parent.childNodes.add(newNode);
+                    newNode = createChildNode(newNode);
                     if(newNode == null) return null;
                     lastNodesInBranch.add(newNode);
-                } else {
 
+                }else if (line.contains("else")) {
+                    Node newNode = createChildNode(parent);
+                    if (newNode == null) return null;
+                    lastNodesInBranch.add(newNode);
+                } else {
                     Node newNode = new Node(nodeNumbers, lineNo);
                     nodeNumbers += 1;
 
@@ -146,14 +157,30 @@ public class Application {
 
                     parent = newNode;
 
-                    if(line.contains("for") || (line.contains("while") && !line.contains("}while"))){
+                    if(line.contains("for") || (line.contains("while") && !line.contains("}while")) || line.contains("case")){
                         lastNodesInBranch.add(parent);
                     }
 
                     newNode = createChildNode(newNode);
 
+                    if(line.contains("case")){
+                        switchCaseNodes.add(newNode);
+                    }
+
                     if (newNode == null) {
                         return null;
+                    }
+
+                    if(line.contains("default")){
+
+                        //Create New Node as end of the switch statement
+                        switchCaseNodes.add(newNode);
+                        newNode.codeLines.remove(lineNo);
+                        Node endOfSwitchStatement = new Node(nodeNumbers, lineNo);
+                        nodeNumbers++;
+                        connectParents(endOfSwitchStatement, switchCaseNodes);
+                        switchCaseNodes.clear();
+                        parent = endOfSwitchStatement;
                     }
 
                     if(line.contains("for") || (line.contains("while") && !line.contains("}while")) || line.contains("do")){
@@ -196,6 +223,15 @@ public class Application {
                 if(line.startsWith("}")) {
                     return statement_node;
                 }
+
+                if(line.contains("break;")){
+                    return statement_node;
+                }
+
+                if(line.contains("continue;")){
+                    return statement_node;
+                }
+
             }
             lineNo++;
         }
@@ -226,17 +262,20 @@ public class Application {
 
     private static HashSet<String> visitedEdges = new HashSet<>();
     private void print_nodes(Node root){
-        if(root.childNodes == null || root.childNodes.size() == 0){
-            return;
-        }else{
+
             for(Node node: root.childNodes){
-                    if(visitedEdges.contains(root.nodeNumber+"->"+node.nodeNumber)){
-                        continue;
-                    }
-                    visitedEdges.add(root.nodeNumber+"->"+node.nodeNumber);
-                    System.out.println("Node From : " + root.nodeNumber + "-->" + node.nodeNumber + " Code Lines " + node.codeLines);
-                    print_nodes(node);
-            }
+
+                if (visitedEdges.contains(root.nodeNumber + "->" + node.nodeNumber)) {
+                    continue;
+                }
+
+                    visitedEdges.add(root.nodeNumber + "->" + node.nodeNumber);
+                    /*System.out.print(root.nodeNumber+" -> ");
+                    for(Node codeline : node.childNodes)
+                        System.out.print(codeLineMap.get(codeline.nodeNumber));*/
+                       System.out.println("Node From : " + root.nodeNumber + " -> " + node.nodeNumber + " Code Lines " + node.codeLines);
+                      // System.out.println(codeLineMap.get(root.nodeNumber) + " -> " + codeLineMap.get(node.nodeNumber));
+                print_nodes(node);
         }
     }
 }
