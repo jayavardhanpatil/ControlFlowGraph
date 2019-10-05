@@ -1,4 +1,19 @@
     int a=5;
+
+    if(i=0){
+        a==7;
+    }
+
+    for(int x = 0){
+        how ypu doing;
+    }
+
+    while(man){
+        if(a==7){
+            sout("nothing");
+        }
+    }
+
     switch(){
         case 1:
             hello 1;

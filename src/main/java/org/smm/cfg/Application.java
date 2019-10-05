@@ -9,8 +9,15 @@ public class Application {
     private static int lineNo = -1;
     private static TreeMap<Integer, String> codeLineMap = new TreeMap<>();
     private static HashMap<Integer, ArrayList<String>> nodeStatementMap = new HashMap<>();
+    private static HashSet<String> visitedEdges = new HashSet<>();
+
+    File file = new File("cfg.dot");
+    FileWriter writer = new FileWriter(file);
 
     public Application() throws IOException {
+        writer.append("digraph G {").append("\n").append("label = <<br/><br/><font point-size='50'><b>CONTROL FLOW GRAPH</b>,<br/> \n" +
+                "---------------------------------------------</font>,<br/>>; labelloc = t;");
+        writer.flush();
     }
 
     public static void main(String[] args) throws IOException {
@@ -55,12 +62,12 @@ public class Application {
         nodeNumbers++;
         createChildNode(root);
         print_nodes(root);
-
-        LinkedList<String> commands = new LinkedList<>();
+        writer.append("}");
+        writer.flush();
 
         ProcessBuilder processBuilder = new ProcessBuilder();
         processBuilder.command("bash", "-c", "dot -Tpng cfg.dot -o cfg.png").start();
-
+        processBuilder.command("bash", "-c", "open cfg.png").start();
 
         //System.out.println(builder.toString());
         System.out.println(codeLineMap);
@@ -176,6 +183,10 @@ public class Application {
                         switchCaseNodes.add(newNode);
                         lastNodesInBranch.add(switchNode.getLast());
                     }else if(line.contains("default")){
+                        switchCaseNodes.add(newNode);
+                        lastNodesInBranch.add(switchNode.getLast());
+                        newNode = new Node(nodeNumbers, lineNo);
+                        nodeNumbers += 1;
                         return newNode;
                     }
                     statement_node = null;
@@ -225,27 +236,8 @@ public class Application {
         }
     }
 
-    public ArrayList<Integer> printChild(Node node){
-        ArrayList<Integer> nodes = new ArrayList<>();
-        System.out.print(node.nodeNumber+"-->(");
-        for(int i=0;i<node.childNodes.size();i++){
-            System.out.print(node.childNodes.get(i).nodeNumber);
-            if(node.childNodes.size() - i >1)System.out.print(",");
-            nodes.add(node.childNodes.get(i).nodeNumber);
-        }
-        System.out.println(")");
-        System.out.print(node.nodeNumber);
-        System.out.println(node.codeLines);
-        return nodes;
-    }
-
-
-    private static HashSet<String> visitedEdges = new HashSet<>();
-    File file = new File("cfg.dot");
-    FileWriter writer = new FileWriter(file);
     private void print_nodes(Node root) throws IOException {
 
-            writer.append("digraph G {").append("\n").append("label = \"Control Flow Graph\";\n");
             for(Node node: root.childNodes){
                 if (visitedEdges.contains(root.nodeNumber + "->" + node.nodeNumber)) {
                     continue;
@@ -259,16 +251,15 @@ public class Application {
                             statements.add(codeLineMap.get(codeLine));
                         }
 
-                            nodeStatementMap.put(node.nodeNumber, statements);
-
-                        System.out.println(nodeStatementMap.get(root.nodeNumber) + "->" + nodeStatementMap.get(node.nodeNumber));
-                        writer.append(nodeStatementMap.get(root.nodeNumber)+ " -> "+nodeStatementMap.get(node.nodeNumber) );
+                        nodeStatementMap.put(node.nodeNumber, statements);
+                       // System.out.println(nodeStatementMap.get(root.nodeNumber) + "->" + nodeStatementMap.get(node.nodeNumber));
+                        writer.append(String.valueOf(root.nodeNumber)).append("->").append(String.valueOf(node.nodeNumber)).append(";");
                         writer.append("\n");
-                        //System.out.println(/*"Node From : " + */root.nodeNumber + " -> " + node.nodeNumber + " Code Lines " + node.codeLines);
+
+
+                        System.out.println(/*"Node From : " + */root.nodeNumber + " -> " + node.nodeNumber + " Code Lines " + node.codeLines);
                       // System.out.println(codeLineMap.get(root.nodeNumber) + " -> " + codeLineMap.get(node.nodeNumber));
                 print_nodes(node);
         }
-            writer.append("}");
-            writer.flush();
     }
 }
