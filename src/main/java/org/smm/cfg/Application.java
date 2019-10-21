@@ -73,7 +73,6 @@ public class Application {
         System.out.println(codeLineMap);
     }
 
-
     private static boolean isElseIfladder = false;
     private static LinkedList<Node> switchNode = new LinkedList<>();
     private Node createChildNode(Node parent) {
@@ -133,7 +132,6 @@ public class Application {
                 }else{
                     Node newNode = new Node(nodeNumbers, lineNo);
                     nodeNumbers += 1;
-
 
                     if (!lastNodesInBranch.isEmpty()) {
                         connectParents(newNode, lastNodesInBranch);

@@ -27,12 +27,16 @@
         default :
             lase;
     }
+
     if(a){
         hi;
     }
     else(){
         hello;
     }
+
+    hello;
+
     if(hello){
         hi;
     }
