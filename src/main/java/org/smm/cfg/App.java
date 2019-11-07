@@ -18,7 +18,7 @@ public class App {
 
 
     private LinkedList<String> readCodeLines() throws IOException {
-        File file = new File("program.txt");
+        File file = new File("program_1.txt");
         BufferedReader reader = new BufferedReader(new FileReader(file));
         String line = "";
         StringBuilder builder = new StringBuilder();

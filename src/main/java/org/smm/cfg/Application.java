@@ -6,17 +6,19 @@ import java.util.*;
 public class Application {
 
     private static int nodeNumbers = 0;
+    private static String finaName = "program_break";
     private static int lineNo = -1;
     private static TreeMap<Integer, String> codeLineMap = new TreeMap<>();
     private static HashMap<Integer, ArrayList<String>> nodeStatementMap = new HashMap<>();
     private static HashSet<String> visitedEdges = new HashSet<>();
 
-    File file = new File("cfg.dot");
+    File file = new File("cfg_"+finaName+".dot");
     FileWriter writer = new FileWriter(file);
+    private static boolean isContinueStatement = false;
 
     public Application() throws IOException {
-        writer.append("digraph G {").append("\n").append("label = <<br/><br/><font point-size='50'><b>CONTROL FLOW GRAPH</b>,<br/> \n" +
-                "---------------------------------------------</font>,<br/>>; labelloc = t;");
+        writer.append("digraph G {").append("\n").append("label = <<br/><br/><font point-size='50'><b>CONTROL FLOW GRAPH</b><br/> \n" +
+                "---------------------------------------------</font><br/>>; labelloc = t;");
         writer.flush();
     }
 
@@ -26,8 +28,10 @@ public class Application {
 
     }
 
+    private static ArrayList<Node> duplicateClosingNode = new ArrayList<>();
+
     private StringBuilder readProgram() throws IOException {
-        File file = new File("program.txt");
+        File file = new File(finaName+".txt");
         BufferedReader reader = new BufferedReader(new FileReader(file));
         StringBuilder builder = new StringBuilder();
         readCode(reader);
@@ -60,14 +64,22 @@ public class Application {
         statement.add("start");
         nodeStatementMap.put(0, statement);
         nodeNumbers++;
+        Node rootHead = root;
         createChildNode(root);
+        removeDuplicateNodes(root);
+        visitedEdges.clear();
         print_nodes(root);
         writer.append("}");
         writer.flush();
 
         ProcessBuilder processBuilder = new ProcessBuilder();
-        processBuilder.command("bash", "-c", "dot -Tpng cfg.dot -o cfg.png").start();
-        processBuilder.command("bash", "-c", "open cfg.png").start();
+        processBuilder.command("bash", "-c", "dot -Tpng cfg_"+finaName+".dot -o cfg_"+finaName+".png").start();
+        try {
+            Thread.sleep(100);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+        processBuilder.command("bash", "-c", "open cfg_"+finaName+".png").start();
 
         //System.out.println(builder.toString());
         System.out.println(codeLineMap);
@@ -75,6 +87,9 @@ public class Application {
 
     private static boolean isElseIfladder = false;
     private static LinkedList<Node> switchNode = new LinkedList<>();
+    private static LinkedList<Node> forNodes = new LinkedList<>();
+    private static Node breakNode;
+
     private Node createChildNode(Node parent) {
 
         Node statement_node = null ;
@@ -144,6 +159,7 @@ public class Application {
 
                     if(line.contains("for") || (line.contains("while") && !line.contains("}while"))){
                         lastNodesInBranch.add(parent);
+                        forNodes.add(parent);
                     }
 
                     newNode = createChildNode(newNode);
@@ -158,6 +174,16 @@ public class Application {
                     }
 
                     if(line.contains("for") || (line.contains("while") && !line.contains("}while")) || line.contains("do")){
+
+                        if(breakNode !=null){
+                            lastNodesInBranch.add(breakNode);
+                            breakNode = null;
+                        }
+
+                        if(!forNodes.isEmpty()){
+                            forNodes.removeLast();
+                        }
+
                         newNode.childNodes.add(parent);
                         parent = newNode;
                     }
@@ -166,14 +192,24 @@ public class Application {
                         lastNodesInBranch.add(parent);
                     }
                     else if(line.contains("if")){
-                        if(!codeLineMap.get(lineNo+1).contains("else")){
-                            lastNodesInBranch.add(parent);
-                        }
-                        if(codeLineMap.get(lineNo+1).contains("else if")){
-                            lastNodesInBranch.add(parent);
-                            elseIfLadderNodes.add(newNode);
-                        }else {
-                            lastNodesInBranch.add(newNode);
+                        if(isContinueStatement){
+                            isContinueStatement = false;
+                        }else if(breakNode != null){
+
+                        } else {
+                            try {
+                                if (!codeLineMap.get(lineNo + 1).contains("else")) {
+                                    lastNodesInBranch.add(parent);
+                                }
+                                if (codeLineMap.get(lineNo + 1).contains("else if")) {
+                                    lastNodesInBranch.add(parent);
+                                    elseIfLadderNodes.add(newNode);
+                                } else {
+                                    lastNodesInBranch.add(newNode);
+                                }
+                            }catch (Exception e) {
+                                e.printStackTrace();
+                            }
                         }
                     }
 
@@ -195,8 +231,16 @@ public class Application {
                 }
 
                 if(statement_node == null){
+
                     statement_node = new Node(nodeNumbers, lineNo);
                     nodeNumbers++;
+
+                    if(line.startsWith("}")){
+                        if(!codeLineMap.get(lineNo-1).contains("while")) {
+                            duplicateClosingNode.add(statement_node);
+                        }
+                    }
+
                     if(!lastNodesInBranch.isEmpty()){
                         connectParents(statement_node, lastNodesInBranch);
                         lastNodesInBranch.clear();
@@ -214,11 +258,19 @@ public class Application {
                 }
 
                 if(line.contains("break;")){
-                    return statement_node;
+                    if(forNodes.isEmpty()){
+                        return statement_node;
+                    }else{
+                        breakNode = statement_node;
+                    }
                 }
 
                 if(line.contains("continue;")){
-                    return statement_node;
+                    isContinueStatement = true;
+                    ArrayList<Node> lastForNodetoConnectContinueStatement = new ArrayList<>();
+                    lastForNodetoConnectContinueStatement.add(statement_node);
+                    connectParents(forNodes.getLast(), lastForNodetoConnectContinueStatement);
+                    //return statement_node;
                 }
 
             }
@@ -234,9 +286,32 @@ public class Application {
         }
     }
 
-    private void print_nodes(Node root) throws IOException {
+    private void removeDuplicateNodes(Node root){
+        for(Node node : root.childNodes) {
 
+            if (visitedEdges.contains(root.nodeNumber + "->" + node.nodeNumber)) {
+                continue;
+            }
+
+            if(root.nodeNumber == 19){
+                System.out.println("18th node");
+            }
+
+            visitedEdges.add(root.nodeNumber + "->" + node.nodeNumber);
+            if (duplicateClosingNode.contains(node)) {
+                System.out.println("before Duplicate Node : " + root.nodeNumber);
+                root.childNodes.addAll(node.childNodes);
+                root.childNodes.remove(node);
+                System.out.println("Duplicate Node : " + root.nodeNumber);
+                continue;
+            }
+            removeDuplicateNodes(node);
+        }
+    }
+
+    private void print_nodes(Node root) throws IOException {
             for(Node node: root.childNodes){
+
                 if (visitedEdges.contains(root.nodeNumber + "->" + node.nodeNumber)) {
                     continue;
                 }
@@ -256,8 +331,26 @@ public class Application {
 
 
                         System.out.println(/*"Node From : " + */root.nodeNumber + " -> " + node.nodeNumber + " Code Lines " + node.codeLines);
+
+                       /* StringBuilder builder = new StringBuilder();
+                        for(int num : node.codeLines){
+                            builder.append(codeLineMap.get(num));
+                        }
+                        System.out.println("\t"+builder.toString());*/
+
+                   /* writer.append(String.valueOf(root.nodeNumber)).append("->").append(builder.toString()).append(";");
+                    writer.append("\n");*/
+
                       // System.out.println(codeLineMap.get(root.nodeNumber) + " -> " + codeLineMap.get(node.nodeNumber));
                 print_nodes(node);
         }
     }
+
+
+    private LinkedList<Node> removeDuplicateNode(Node parentNode, Node duplicateNode){
+        System.out.println("Insyde removeDulpicateNode");
+        parentNode.childNodes = duplicateNode.childNodes;
+        return parentNode.childNodes;
+    }
+
 }
