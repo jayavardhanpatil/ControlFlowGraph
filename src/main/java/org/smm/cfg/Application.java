@@ -6,11 +6,12 @@ import java.util.*;
 public class Application {
 
     private static int nodeNumbers = 0;
-    private static String finaName = "program_4";
+    private static String finaName = "program_3";
     private static int lineNo = -1;
     private static TreeMap<Integer, String> codeLineMap = new TreeMap<>();
     private static HashMap<Integer, ArrayList<String>> nodeStatementMap = new HashMap<>();
     private static HashSet<String> visitedEdges = new HashSet<>();
+    private static int lastNode = 0;
 
     File file = new File("cfg_"+finaName+".dot");
     FileWriter writer = new FileWriter(file);
@@ -64,11 +65,14 @@ public class Application {
         statement.add("start");
         nodeStatementMap.put(0, statement);
         nodeNumbers++;
-        Node rootHead = root;
         createChildNode(root);
         removeDuplicateNodes(root);
         visitedEdges.clear();
         print_nodes(root);
+
+        writer.append(String.valueOf(lastNode)).append("->").append("\"END\"");
+        writer.append("START [shape = doublecircle];\n" +
+                "\tEND [shape = doublecircle];");
         writer.append("}");
         writer.flush();
 
@@ -195,7 +199,7 @@ public class Application {
                         if(isContinueStatement){
                             isContinueStatement = false;
                         }else if(breakNode != null){
-
+                            //don't do anything just continue with the code flow
                         } else {
                             try {
                                 if (!codeLineMap.get(lineNo + 1).contains("else")) {
@@ -312,11 +316,15 @@ public class Application {
 
     private void print_nodes(Node root) throws IOException {
             for(Node node: root.childNodes){
-
                 if (visitedEdges.contains(root.nodeNumber + "->" + node.nodeNumber)) {
                     continue;
                 }
-                    visitedEdges.add(root.nodeNumber + "->" + node.nodeNumber);
+
+                if ((node.nodeNumber > lastNode)) {
+                    lastNode = node.nodeNumber;
+                }
+
+                visitedEdges.add(root.nodeNumber + "->" + node.nodeNumber);
                     /*System.out.print(root.nodeNumber+" -> ");
                     for(Node codeline : node.childNodes)
                         System.out.print(codeLineMap.get(codeline.nodeNumber));*/
@@ -327,7 +335,14 @@ public class Application {
 
                         nodeStatementMap.put(node.nodeNumber, statements);
                        // System.out.println(nodeStatementMap.get(root.nodeNumber) + "->" + nodeStatementMap.get(node.nodeNumber));
-                        writer.append(String.valueOf(root.nodeNumber)).append("->").append(String.valueOf(node.nodeNumber)).append(";");
+
+                        if (root.nodeNumber == 0){
+                            writer.append("START");
+                        }else{
+                            writer.append(String.valueOf(root.nodeNumber));
+                        }
+
+                        writer.append("->").append(String.valueOf(node.nodeNumber)).append(";");
                         writer.append("\n");
 
 
@@ -345,6 +360,7 @@ public class Application {
                       // System.out.println(codeLineMap.get(root.nodeNumber) + " -> " + codeLineMap.get(node.nodeNumber));
                 print_nodes(node);
         }
+
     }
 
 

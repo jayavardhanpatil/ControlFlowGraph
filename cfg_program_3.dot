@@ -1,13 +1,12 @@
 digraph G {
 label = <<br/><br/><font point-size='50'><b>CONTROL FLOW GRAPH</b><br/> 
----------------------------------------------</font><br/>>; labelloc = t;0->1;
+---------------------------------------------</font><br/>>; labelloc = t;START->1;
 1->2;
 2->3;
 3->4;
 4->5;
 5->4;
-4->6;
-6->8;
+4->8;
 8->9;
 9->10;
 10->11;
@@ -17,4 +16,5 @@ label = <<br/><br/><font point-size='50'><b>CONTROL FLOW GRAPH</b><br/>
 10->12;
 2->7;
 7->8;
-}
+13->"END"START [shape = doublecircle];
+	END [shape = doublecircle];}
