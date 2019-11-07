@@ -11,7 +11,8 @@ while( I <= N){
   else{
     F= F+2;
     }
-  } while( F<=20);
+  }while( F<=20);
+
    F= K* N;
    I= I +1;
 }

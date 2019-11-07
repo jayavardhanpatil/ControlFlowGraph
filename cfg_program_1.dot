@@ -11,6 +11,8 @@ label = <<br/><br/><font point-size='50'><b>CONTROL FLOW GRAPH</b><br/>
 8->7;
 8->9;
 9->10;
+10->11;
+9->11;
 4->6;
 6->7;
 }

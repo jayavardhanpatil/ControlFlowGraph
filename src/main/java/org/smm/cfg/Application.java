@@ -6,7 +6,7 @@ import java.util.*;
 public class Application {
 
     private static int nodeNumbers = 0;
-    private static String finaName = "program_break";
+    private static String finaName = "program_4";
     private static int lineNo = -1;
     private static TreeMap<Integer, String> codeLineMap = new TreeMap<>();
     private static HashMap<Integer, ArrayList<String>> nodeStatementMap = new HashMap<>();
@@ -235,10 +235,8 @@ public class Application {
                     statement_node = new Node(nodeNumbers, lineNo);
                     nodeNumbers++;
 
-                    if(line.startsWith("}")){
-                        if(!codeLineMap.get(lineNo-1).contains("while")) {
-                            duplicateClosingNode.add(statement_node);
-                        }
+                    if(line.startsWith("}") && !line.contains("while") && !codeLineMap.get(lineNo-1).contains("while")){
+                        duplicateClosingNode.add(statement_node);
                     }
 
                     if(!lastNodesInBranch.isEmpty()){
@@ -287,25 +285,28 @@ public class Application {
     }
 
     private void removeDuplicateNodes(Node root){
-        for(Node node : root.childNodes) {
 
-            if (visitedEdges.contains(root.nodeNumber + "->" + node.nodeNumber)) {
-                continue;
+        try {
+            for (Node node : root.childNodes) {
+
+                System.out.println(node.nodeNumber);
+                if (visitedEdges.contains(root.nodeNumber + "->" + node.nodeNumber)) {
+                    continue;
+                }
+
+                visitedEdges.add(root.nodeNumber + "->" + node.nodeNumber);
+                if (duplicateClosingNode.contains(node)) {
+                    System.out.println("before Duplicate Node : " + root.nodeNumber);
+                    root.childNodes.addAll(node.childNodes);
+                    root.childNodes.remove(node);
+                    System.out.println("Duplicate Node : " + root.nodeNumber);
+                    continue;
+                }
+                removeDuplicateNodes(node);
             }
 
-            if(root.nodeNumber == 19){
-                System.out.println("18th node");
-            }
-
-            visitedEdges.add(root.nodeNumber + "->" + node.nodeNumber);
-            if (duplicateClosingNode.contains(node)) {
-                System.out.println("before Duplicate Node : " + root.nodeNumber);
-                root.childNodes.addAll(node.childNodes);
-                root.childNodes.remove(node);
-                System.out.println("Duplicate Node : " + root.nodeNumber);
-                continue;
-            }
-            removeDuplicateNodes(node);
+        }catch (Exception e){
+            removeDuplicateNodes(root);
         }
     }
 

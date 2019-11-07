@@ -22,5 +22,5 @@ do{
 
 if( N<F){
 G= H + N;
-return  G;
 }
+return  G;
